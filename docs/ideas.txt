@@ -1,0 +1,457 @@
+Unordered brain farts of things to investigate or implement.
+
+binary:   &   !=   ->   <   <=   !&   !->   !|   ==   !^   ^
+ternary:  &?  ==?  !=?  <?  <=?  !&?  !|?   +    -    *    /
+
+
+generally:
+- fewer restrictions is better (fewer constrainted values)
+- booly over non-booly
+- non-reifier over reifier
+- pair over non-pair (unless they can be merged together)
+- math as the last resort
+- fewer vars over more vars
+
+goal: eliminated same booly-xnor and nimp none all
+tier: xor
+tier: nall
+tier: diff imp
+tier: some lt lte
+tier: isall isdiff islt islte isnall issame issome isnone
+tier: sum
+tier: product
+tier: minus div
+
+
+
+// these are some DSL reduction tricks that we could investigate
+
+
+
+
+
+R = all?(A B)
+S = all?(A B C)
+# -> R = all?(A B), S = all?(R C)   but i'm not sure whether that's really that helpful
+# -> similar for isnall
+
+
+
+
+A = all?(a b c)
+B = all?(x y z)
+nall(A B)
+# -> nall(a b c x y z)    The nall requires at least one element A or B to be zero
+# -> so at least one of the lower case vars must be zero
+
+
+
+: A [0 1]
+: B [0 1]
+A ^ B  # -> A != B
+A !^ B # -> A == B
+# only when A and B are size=2, contain zero, and equal
+
+
+
+
+
+A = all?(X a)
+B = all?(X b)
+C = all?(X c)
+# -> _kle_
+m = product(A B C) # do not equal X. not even when bool. this way X wont be 0 when A=0
+m = X * m # here X can be zero or one, regardless of the value of m
+A !^ a
+B !^ b
+C !^ c
+
+
+
+
+
+X = A ==? 5
+Y = all?(X B)
+# =>   (Y|B) ? (A=5) : (A != 5)
+
+
+X = A ==? 5
+Y <= X
+# =>   Y ? (A = 5) : A != 5
+
+
+X = A ==? 5
+Y !& B
+# =>   Y ? (A != 5) : (A = 5)
+
+
+
+X = A ==? 4
+R = all?(X B)
+# => also means R <= B. which is the case regardless. (R <= X as well)
+
+# R = all?(A B C ...)
+# => R <= A, R <= B, R <= C, ...
+
+
+A != B
+A | C
+# => B <= C, A leaf
+
+
+
+
+A <= X
+B | X
+C !& X
+X <= D
+# -> A <= D, A !& C, X is leaf
+
+
+
+X <= Y
+X = all?(A Y)
+# -> eliminate X <= Y because it is redundant (difficult to search for efficiently)
+
+
+#oer
+(A <= X) & (B <= X) & (C <= X) & (D | X) & !(E & X) & (X <= F)
+
+
+#kmg
+# A <= X, B<= X, C<=X, !(D & E & X), F|X
+# ->
+# !(D&E) == !((!A) & (!B) & (!C) & D & E & F)
+# !(D&E) == !(!(A | B)&(!C)&D&E&F)
+# !(D&E) == (A | B | C | (!D) | (!E) | (!F))
+# !(D&E) == (A | B | (x == !(D&E&F)))
+tmp = nall?(D E F)
+tmp2 = nall?(D E)
+tmp2 = A * B * tmp
+
+
+
+
+
+X !& A
+X = all?(A B)
+# -> A !& B, X leaf. works for any additional X <= Y and X !& Y
+
+
+
+ ## _2035_ = all?( _54_ _2007_ )                 # numdom([0,1]) = all?( numdom([0,1]) numdom([0,1]) )            # indexes: 2035 = 54 2007               # counts: 4 = all?( 9 2 )
+ ## _2033_ !& _54_                               # numdom([0,1]) !& numdom([0,1])                                 # args: 2033, 54                        # counts: 4 !& 9
+should be able to fix this one
+A = all?(X C D)
+X !& E
+we can interchange X for E in the isall
+A = all?(E C D)
+X !& E
+which may make sense in some cases
+
+
+
+
+# interchangeable!
+(A ==? B) == C
+A == (B ==? C)
+
+
+
+
+
+X == (A == B), C == (X & D)
+=>
+C<=D,((C==D)>=(A==B)),((A^B)^(C&D))|(A==B)
+C<=D,((C==D)>=(A==B)),((A!=B)!=(C&D))|(A==B)
+C<=D,((C==D)>=(A==B)),((A==B)==(C&D))|(A==B)
+C<=D,((C==D)>=(A==B)),(A==(B==(C&D)))|(A==B)
+(A==B) >= C, ((C==D)>=(A==B))
+
+
+
+
+: A,B,C,D [0 1]
+A = B ==? C
+C != D
+=>
+A == (B == C), C != D
+D==(A != B), C!=D
+A == (B != D), C != D
+
+
+
+
+: A,R [0 1]
+R = A ==? 1
+<=>
+R = A ==? R
+
+
+
+
+
+
+some(A B C)
+R = some?(A B C D E F)
+=>
+some(A B C), R == 1
+
+but also...
+
+some(B D E)
+R = some?(A B C D E F)
+=>
+some(B D E), R == 1
+
+
+
+
+R = all?(A B), C <= R, R leaf
+=>
+C <= (A&B)    (this is the same except R is now an anonymous var)
+C->A, C->B
+
+
+
+
+R == (A == B), R <= C, R leaf
+=>
+C|(A!==B)     (this still requires an anonymous var so doesnt really eliminate R)
+(A^B)|C       (same as above because bool != is same as ^)
+
+
+
+
+
+## nall( _2972_ _2989_ _32547_ )                # nall( numdom([0,1]) numdom([0,1]) numdom([0,1]) )              # indexes: 2972 2989 32547              # counts: nall( 5 46 3 )
+## _34512_ = all?( _2989_ _32547_ )             # numdom([0,1]) = all?( numdom([0,1]) numdom([0,1]) )            # indexes: 34512 = 2989 32547           # counts: 8 = all?( 46 3 )
+nall(A B C) , R = all?(B C)
+=>
+A !& R, R = all?(B C)
+so;
+A !& R, R = all?(B C), R leaf
+=>
+nall(A B C)
+
+
+
+
+
+: _32553_ [0,1] # T:true  # ocounts: 2  # ops (2): !& ==? $ meta: [ 0000001100000000: BOOLY, NALL ]
+ ## _32553_ = _13777_ ==? 6                      # numdom([0,1]) = strdom([0,84]) ==? lit(6)                      # indexes: 32553 = 13777 ==? 65529      # counts: 2 = 7 ==? -
+ ## _4783_ !& _32553_                            # numdom([0,1]) !& numdom([0,1])                                 # args: 4783, 32553                     # counts: 44 !& 2
+R = A ==? x, R !& B, R leaf
+=>
+!(A & B)    (but only with bools or boolies, need to confirm)
+
+
+
+
+
+
+A != B, A | C | D
+=>
+B -> (D | C)
+
+
+
+
+
+: _2430_ [0,1] # T:true  # ocounts: 2  # ops (2): <= ==? $ meta: [ 0000001000010000: BOOLY, LTE_RHS ]
+ ## _2430_ = _18_ ==? _25_                       # numdom([0,1]) = numdom([1,4]) ==? numdom([1,4])                # indexes: 2430 = 18 ==? 25             # counts: 2 = 6 ==? 6
+ ## _503_ <= _2430_                              # numdom([0,1]) <= numdom([0,1])                                 # args: 503, 2430                       # counts: 8 <= 2
+R == (A==B), C <= R, R leaf         R=A==?B, C<=R, R leaf
+=>
+C?(A==B):1                          C->(A==?B)
+
+
+
+
+
+    describe('set of leafs', function() {
+
+// a diff(A B C ..) where all args are leafs can be cut
+// note: diff([01] [05] [05]) when A is a leaf cant be cut because A prevents B and
+// C from becoming 0 and 1 since A needs to be at least one of them. so be careful.
+//: _14_ [1,2,4,6] @list prio(3,1,2,4,5,6) # T:true  # ocounts: 1  # ops (1): diff $ meta: [ 0000010000000001: NOT_BOOLY, DIFF ]
+//: _21_ [1,2,4,6] @list prio(3,1,2,4,5,6) # T:true  # ocounts: 1  # ops (1): diff $ meta: [ 0000010000000001: NOT_BOOLY, DIFF ]
+//: _28_ [1,2,4,6] @list prio(3,1,2,4,5,6) # T:true  # ocounts: 1  # ops (1): diff $ meta: [ 0000010000000001: NOT_BOOLY, DIFF ]
+//: _35_ [1,2,4,6] @list prio(3,1,2,4,5,6) # T:true  # ocounts: 1  # ops (1): diff $ meta: [ 0000010000000001: NOT_BOOLY, DIFF ]
+//: _42_ [1,2,4,6] @list prio(3,1,2,4,5,6) # T:true  # ocounts: 1  # ops (1): diff $ meta: [ 0000010000000001: NOT_BOOLY, DIFF ]
+//diff( _14_ _21_ _28_ _35_ _42_ )
+
+    });
+
+
+
+
+
+
+
+
+
+//: _18_ [1,4] # skipping markov dist (no longer supported) # T:true  # ocounts: 6  # ops (6): ==? ==? ==? ==? ==? ==? $ meta: [ 0000000001000001: NOT_BOOLY, ISSAME_ARG ]
+// ## _143_ = _18_ ==? 1                           # numdom([0,1]) = numdom([1,4]) ==? lit(1)                       # indexes: 143 = 18 ==? 65535           # counts: 3 = 6 ==? -
+// ## _1649_ = _18_ ==? 2                          # numdom([0,0,3,3]) = numdom([1,4]) ==? lit(2)                   # indexes: 1649 = 18 ==? 65532          # counts: 5 = 6 ==? -
+// ## _1652_ = _18_ ==? 3                          # numdom([0,0,2,2]) = numdom([1,4]) ==? lit(3)                   # indexes: 1652 = 18 ==? 65530          # counts: 4 = 6 ==? -
+// ## _203_ = _18_ ==? 4                           # numdom([0,1]) = numdom([1,4]) ==? lit(4)                       # indexes: 203 = 18 ==? 65534           # counts: 2 = 6 ==? -
+// ## _2429_ = _11_ ==? _18_                       # numdom([0,1]) = numdom([1,1,4,4]) ==? numdom([1,4])            # indexes: 2429 = 11 ==? 18             # counts: 4 = 3 ==? 6
+// ## _2430_ = _18_ ==? _25_                       # numdom([0,1]) = numdom([1,4]) ==? numdom([1,4])                # indexes: 2430 = 18 ==? 25             # counts: 2 = 6 ==? 6
+
+
+
+
+
+
+: _11_ [1,1,4,4] # skipping markov dist (no longer supported) # T:true  # ocounts: 3  # ops (3): ==? ==? ==? $ meta: [ 0000000001000001: NOT_BOOLY, ISSAME_ARG ]
+ ## _142_ = _11_ ==? 1                           # numdom([0,1]) = numdom([1,1,4,4]) ==? lit(1)                   # indexes: 142 = 11 ==? 65535           # counts: 4 = 3 ==? -
+ ## _202_ = _11_ ==? 4                           # numdom([0,1]) = numdom([1,1,4,4]) ==? lit(4)                   # indexes: 202 = 11 ==? 65534           # counts: 3 = 3 ==? -
+ ## _2429_ = _11_ ==? _18_                       # numdom([0,1]) = numdom([1,1,4,4]) ==? numdom([1,4])            # indexes: 2429 = 11 ==? 18             # counts: 4 = 3 ==? 6
+R = X ==? 1
+S = X ==? 4
+T = X ==? Y:[1 4]
+looks like a pattern that can be tackled
+
+
+
+
+
+
+
+# A <= X, E <= X, B | X, !(C & X), X <= D
+# =>    A !& C, E !& C, B | D, A <= D, E <= D, C <= B, X leaf
+
+
+
+
+# A !& C, A <= D
+# <=>   (!A)|(C<D)  or  (!A->(C<D))  which we cant model properly in one constraint
+
+
+
+
+!(X & A), X == (B & C), X ? D : 1, X ? E : 1
+=>
+!(B&C)   except for one case :/
+
+
+
+
+: _2057_ [0,1] # T:true  # ocounts: 3  # ops (3): !& -> all? $ meta: [ 00000000000000000001001001000000: BOOLY, ISALL_RESULT, IMP_LHS, NALL ]
+ ## _2057_ = all?( _131_ _2018_ )                # numdom([0,1]) = all?( numdom([0,1]) numdom([0,1]) )            # indexes: 2057 = 131 2018              # counts: 3 = all?( 9 2 )
+ ## _2057_ -> _519_                              # numdom([0,1]) -> numdom([0,1])                                 # args: 2057, 519                       # counts: 3 -> 9
+ ## _138_ !& _2057_                              # numdom([0,1]) !& numdom([0,1])                                 # args: 138, 2057                       # counts: 7 !& 3
+
+R = all?(A B), R -> C, R !& D
+R == (A&B), R?C:1, !(R&D)
+=>
+((B?C>D:1)|(A?C>D:1))        (requires three anonymous Rs)
+(A&B)?C>D:1                  (requires two anonyous R)
+
+
+
+
+{index=3,name=R,numdom([0,2])} = sum({index=0,name=A,soldom([1,1])} {index=2,name=C,numdom([0,1])} )
+R:[0 2] = 1 + C:[0 1]
+=>
+R:[1 2] = 1 + C:[0 1]
+C:[0 1] = R:[1 2] !=? 1
+
+{index=2,name=C,numdom([0,1])} = isdiff({index=3,name=R,numdom([1,2])} {index=65535,soldom([1,1])} )
+
+
+
+
+there was a case where you had;
+# Var decls:
+: _7_ [1,20] @list prio(11,1,12,2,20,8,9,10,19,18,7,5,6,17,15,16,14,4,13,3) # T:true  # ocounts: 14  # ops (14): ==? ==? ==? ==? ==? ==? ==? ==? ==? ==? ==? ==? ==? diff $ meta: [ 00000000000000000100000010000001: NOT_BOOLY, ISSAME_ARG, DIFF ]
+ ## diff( _7_ _14_ _21_ _28_ _35_ _42_ _49_ _56_ _63_ _70_ _77_ _84_ _91_ _98_ _105_ _112_ _119_ _126_ _133_ _140_ )   # diff( numdom([1,20]) numdom([1,20]) numdom([1,20]) numdom([1,20]) numdom([1,20]) numdom([1,20]) numdom([1,20]) numdom([1,20]) numdom([1,20]) numdom([1,20]) numdom([1,20]) numdom([1,20]) numdom([1,20]) numdom([1,20]) numdom([1,20]) numdom([1,20]) numdom([1,20]) numdom([1,20]) numdom([1,20]) numdom([1,20]) )    # indexes: 7 14 21 28 35 42 49 56 63 70 77 84 91 98 105 112 119 126 133 140    # counts: diff( 14 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 20 )
+ ## _281_ = _7_ ==? 8                            # numdom([0,1]) = numdom([1,20]) ==? lit(8)                      # indexes: 281 = 7 ==? 65533            # counts: 2 = 14 ==? -
+ ## _282_ = _7_ ==? 9                            # numdom([0,1]) = numdom([1,20]) ==? lit(9)                      # indexes: 282 = 7 ==? 65528            # counts: 2 = 14 ==? -
+ ## _283_ = _7_ ==? 10                           # numdom([0,1]) = numdom([1,20]) ==? lit(10)                     # indexes: 283 = 7 ==? 65522            # counts: 2 = 14 ==? -
+ ## _284_ = _7_ ==? 18                           # numdom([0,1]) = numdom([1,20]) ==? lit(18)                     # indexes: 284 = 7 ==? 65520            # counts: 2 = 14 ==? -
+ ## _285_ = _7_ ==? 19                           # numdom([0,1]) = numdom([1,20]) ==? lit(19)                     # indexes: 285 = 7 ==? 65516            # counts: 2 = 14 ==? -
+ ## _286_ = _7_ ==? 20                           # numdom([0,1]) = numdom([1,20]) ==? lit(20)                     # indexes: 286 = 7 ==? 65525            # counts: 2 = 14 ==? -
+ ## _561_ = _7_ ==? 1                            # numdom([0,1]) = numdom([1,20]) ==? lit(1)                      # indexes: 561 = 7 ==? 65535            # counts: 2 = 14 ==? -
+ ## _562_ = _7_ ==? 2                            # numdom([0,1]) = numdom([1,20]) ==? lit(2)                      # indexes: 562 = 7 ==? 65532            # counts: 2 = 14 ==? -
+ ## _569_ = _7_ ==? 11                           # numdom([0,1]) = numdom([1,20]) ==? lit(11)                     # indexes: 569 = 7 ==? 65521            # counts: 2 = 14 ==? -
+ ## _570_ = _7_ ==? 12                           # numdom([0,1]) = numdom([1,20]) ==? lit(12)                     # indexes: 570 = 7 ==? 65523            # counts: 2 = 14 ==? -
+ ## _983_ = _7_ ==? 4                            # numdom([0,1]) = numdom([1,20]) ==? lit(4)                      # indexes: 983 = 7 ==? 65534            # counts: 2 = 14 ==? -
+ ## _986_ = _7_ ==? 13                           # numdom([0,1]) = numdom([1,20]) ==? lit(13)                     # indexes: 986 = 7 ==? 65524            # counts: 2 = 14 ==? -
+ ## _987_ = _7_ ==? 14                           # numdom([0,1]) = numdom([1,20]) ==? lit(14)                     # indexes: 987 = 7 ==? 65519            # counts: 2 = 14 ==? -
+and some of these results where in a SOME;
+## some( _281_ _282_ _283_ _284_ _285_ _286_ )   # some( numdom([0,1]) numdom([0,1]) numdom([0,1]) numdom([0,1]) numdom([0,1]) numdom([0,1]) )    # indexes: 281 282 283 284 285 286    # counts: some( 2 2 2 2 2 2 )
+so that must mean _7_ is going to be one [8 10 18 20] and none of the others
+(the others were part of an issome so they are instantly false)
+## _989_ = some?( _561_ _562_ _569_ _570_ _983_ _986_ _987_ )   # numdom([0,1]) = some?( numdom([0,1]) numdom([0,1]) numdom([0,1]) numdom([0,1]) numdom([0,1]) numdom([0,1]) numdom([0,1]) )    # indexes: 989 = 561 562 569 570 983 986 987    # counts: 1 = some?( 2 2 2 2 2 2 2 )
+it's a bit elaborate to check for, though
+we'll have to check whether ther R of an issame is used in a some and if all other args of that some are also used as R of an issame on the same arg
+
+
+
+
+
+
+
+
+
+
+: _1398_ [0,1] # T:true  # ocounts: 2  # ops (2): -> all? $ meta: [ 00000000000000000000001001000000: BOOLY, ISALL_RESULT, IMP_LHS ]
+ ## _1398_ = all?( _131_ _1860_ )                # numdom([0,1]) = all?( numdom([0,1]) numdom([0,0,2,2]) )        # indexes: 1398 = 131 1860              # counts: 2 = all?( 9 4 )
+ ## _1398_ -> _1318_                             # numdom([0,1]) -> numdom([0,1])                                 # args: 1398, 1318                      # counts: 2 -> 3
+
+R == (A & B), R ? C : 1
+=>
+C|!A|!B
+C|(A^B)
+
+
+
+
+
+
+: P0K0 [0,13] # T:false  # ocounts: 3  # index = 609  # ops (3): -> <=? sum $ meta: [ 00000000000000010000000100010001: NOT_BOOLY, IMP_LHS, ISLTE_ARG, SUM_RESULT ]
+ ## P0K0 = sum( __21 __23 __23 __47 __47 __62 __70 __76 __77 __77 __118 __123 __123 )   # numdom([0,13]) = sum( numdom([0,1]) numdom([0,1]) numdom([0,1]) numdom([0,1]) numdom([0,1]) numdom([0,1]) numdom([0,1]) numdom([0,1]) numdom([0,1]) numdom([0,1]) numdom([0,1]) numdom([0,1]) numdom([0,1]) )    # indexes: 609 = 141 143 143 167 167 182 190 196 197 197 238 243 243    # counts: 3 = sum( 5 5 5 5 5 3 3 3 7 7 5 6 6 )
+ ## P0K0 -> __503                                # numdom([0,13]) -> numdom([0,1])                                # args: 609, 624                        # counts: 3 -> 2
+ ## __503 = 2 <=? P0K0                           # numdom([0,1]) = lit(2) <=? numdom([0,13])                      # indexes: 624 = 65533 <=? 609          # counts: 2 = - <=? 3
+: __503 [0,1] # T:false  # ocounts: 2  # index = 624  # ops (2): -> <=? $ meta: [ 00000000000000000000000000100010: BOOLY, OTHER, IMP_RHS ]
+ ## P0K0 -> __503                                # numdom([0,13]) -> numdom([0,1])                                # args: 609, 624                        # counts: 3 -> 2
+ ## __503 = 2 <=? P0K0                           # numdom([0,1]) = lit(2) <=? numdom([0,13])                      # indexes: 624 = 65533 <=? 609          # counts: 2 = - <=? 3
+A -> B, B = 2 <=? A, R = sum(A ...)
+=>
+B > 0, A <= 2, A = sum(...)
+
+
+
+
+R:[0023]=A:[01]+B:[01]+C:[01] with R a leaf
+=>
+A ? B|C : 1, B ? A|C : 1, C ? A|B : 1
+(A|B|C)==(A|C),(A|B|C)==(A|B),(A|B|C)==(B|C)
+(A|B|C)==((A|C)&(A|B)&(B|C))
+
+
+
+
+
+
+: _466_ [0,1] # T:true  # ocounts: 2  # ops (2): -> all? $ meta: [ 00000000000000000000000010010000: BOOLY, ISALL_RESULT, IMP_LHS ]
+ ## _466_ = all?( _19_ _1649_ )                  # numdom([0,1]) = all?( numdom([0,1]) numdom([0,0,3,3]) )        # indexes: 466 = 19 1649                # counts: 2 = all?( 8 5 )
+ ## _466_ -> _1286_                              # numdom([0,1]) -> numdom([0,1])                                 # args: 466, 1286                       # counts: 2 -> 3
+
+R = all?(A B), R -> C
+R == (A & B), R ? C : 1
+=>
+some((A==0) (B==0) C)              !A|!B|C
+(A==0) | (B<=C)                    !A|B<=C
+A -> (B<=C)                        A ? (B<=C) : 1
+some((A == (A>?B) C)               (A == (A>B)) | C
+some((B == (B>?A) C)               (B == (B>A)) | C
+
+
+
+
+how do we deal with semantic implication ditching an entire tree?
+($22 ==? RIGHT) -> all?(($11 ==? WATER) ($13 ==? WATER) ($21 ==? WATER) ($23 ==? WATER) ($31 ==? WATER) ($32 ==? WATER) ($33 ==? WATER)) # if right piece then confirm every cell except the direct left cell is water
+in this example we could ditch the isall and all its decedents when the issame on the left does not hold...
