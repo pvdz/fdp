@@ -24,7 +24,7 @@ module.exports = function () {
       },
       concat: {
         files: {
-          'build/fdo-es5.js': ['build/fdo.es6.concat.js'],
+          'build/fdp-es5.js': ['build/fdp.es6.concat.js'],
         },
       },
     },
@@ -49,7 +49,7 @@ module.exports = function () {
           },
         },
         files: {
-          'build/fdo.es6.concat.js': [
+          'build/fdp.es6.concat.js': [
             '../fdlib/src/**/*',
             'src/**/*',
           ],
@@ -72,7 +72,7 @@ module.exports = function () {
           },
         },
         files: {
-          'build/fdo.es6.concat.js': [
+          'build/fdp.es6.concat.js': [
             '../fdlib/src/**/*',
             'src/**/*',
           ],
@@ -149,8 +149,8 @@ module.exports = function () {
         cmd: 'node_modules/.bin/js-beautify',
         args: [
           '-s 4',
-          '-f', 'build/fdo-es5.js',
-          '-o', 'build/fdo-es5-beautified.js',
+          '-f', 'build/fdp-es5.js',
+          '-o', 'build/fdp-es5-beautified.js',
         ],
       },
     },
@@ -163,7 +163,7 @@ module.exports = function () {
           verbose: true,
         },
         files: {
-          'dist/fdo.dist.min.js': ['build/fdo-es5.js'],
+          'dist/fdp.dist.min.js': ['build/fdp-es5.js'],
         },
       },
     },
@@ -279,12 +279,12 @@ module.exports = function () {
 
   grunt.registerTask('concat-dist-to-browserjs', function() {
     console.log('- Copying dist to browser.js');
-    grunt.file.copy('dist/fdo.dist.min.js', 'dist/browser.js');
+    grunt.file.copy('dist/fdp.dist.min.js', 'dist/browser.js');
   });
   grunt.registerTask('concat-bug-to-browserjs', function() {
     console.log('- Copying build to browser.js');
-    grunt.file.copy('build/fdo-es5-beautified.js', 'dist/browser.js');
-    grunt.file.copy('build/fdo-es5-beautified.js', 'dist/fdo.dist.min.js');
+    grunt.file.copy('build/fdp-es5-beautified.js', 'dist/browser.js');
+    grunt.file.copy('build/fdp-es5-beautified.js', 'dist/fdp.dist.min.js');
   });
 
   grunt.registerTask('clean', ['remove']);
