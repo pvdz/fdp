@@ -179,7 +179,7 @@ function _preSolver(dsl, solver, options, solveOptions) {
   if (state === $REJECTED) {
     term.error('<rejected without fdq>');
     TRACE('problem rejected!');
-    return false;
+    return 'rejected';
   }
 
   if (problem.input.varstrat === 'throw') {
@@ -216,7 +216,7 @@ function _preSolver(dsl, solver, options, solveOptions) {
 
   term.error('<' + fdSolution + ' during fdq>');
   TRACE('problem rejected!');
-  return false;
+  return 'rejected';
 }
 
 function crunch(dsl, problem, options = {}) {
