@@ -35,8 +35,7 @@ module.exports = function () {
           // https://github.com/gruntjs/grunt-contrib-concat
           banner: 'let FDP = (function(){',
           footer: '\n  return FDP;\n})();\nexport default FDP;\n',
-          sourceMap: true,
-          sourceMapStyle: 'inline', // embed link inline
+          sourceMap: false,
           process: function(code, path){
             if (path === 'src/index.js') return '';
             console.log('concatting', path);
@@ -81,7 +80,7 @@ module.exports = function () {
     },
 
     mochaTest: {
-      all: {
+      failfast: {
         src: [
           'tests/specs/**/*.spec.js',
           '../fdh/tests/specs/**/*.spec.js',
@@ -157,6 +156,16 @@ module.exports = function () {
 
     uglify: {
       dist: {
+        options: {
+          report: 'gzip', // false, 'none', 'min', 'gzip'. gzip is a little slower but not significant and good to see.
+          //sourceMap: true,
+          //verbose: true,
+        },
+        files: {
+          'dist/fdp.dist.min.js': ['build/fdp-es5.js'],
+        },
+      },
+      test: {
         options: {
           report: 'gzip', // false, 'none', 'min', 'gzip'. gzip is a little slower but not significant and good to see.
           sourceMap: true,
@@ -277,27 +286,28 @@ module.exports = function () {
   grunt.loadNpmTasks('grunt-replace');
   grunt.loadNpmTasks('grunt-contrib-concat');
 
-  grunt.registerTask('concat-dist-to-browserjs', function() {
-    console.log('- Copying dist to browser.js');
-    grunt.file.copy('dist/fdp.dist.min.js', 'dist/browser.js');
+  grunt.registerTask('concat-dist-to-fdpjs', function() {
+    console.log('- Copying dist to fdp.js');
+    grunt.file.copy('dist/fdp.dist.min.js', 'dist/fdp.js');
   });
-  grunt.registerTask('concat-bug-to-browserjs', function() {
-    console.log('- Copying build to browser.js');
-    grunt.file.copy('build/fdp-es5-beautified.js', 'dist/browser.js');
+  grunt.registerTask('concat-bug-to-fdpjs', function() {
+    console.log('- Copying build to fdp.js');
+    grunt.file.copy('build/fdp-es5-beautified.js', 'dist/fdp.js');
     grunt.file.copy('build/fdp-es5-beautified.js', 'dist/fdp.dist.min.js');
   });
 
   grunt.registerTask('clean', ['remove']);
-  grunt.registerTask('build', 'alias for dist', ['dist']);
-  grunt.registerTask('dist', 'lint, test, build, minify', ['clean', 'run:lint', 'mochaTest:all', '_dist']);
-  grunt.registerTask('_dist', 'just build dist', ['clean', 'concat:build', 'babel:concat', 'uglify:dist']);
-  grunt.registerTask('distq', 'create dist (inc browser.js) without testing', ['_dist', 'concat-dist-to-browserjs']);
-  grunt.registerTask('distbug', 'create dist for browser debugging, keeps asserts', ['clean', 'concat:test', 'babel:concat', 'run:jsbeautify', 'concat-bug-to-browserjs']);
-  grunt.registerTask('distheat', 'create dist for heatmap inspection, no asserts', ['clean', 'concat:build', 'babel:concat', 'run:jsbeautify', 'concat-bug-to-browserjs']);
+  grunt.registerTask('build', 'clean, concat, babel (sans sourcemaps)', ['clean', 'concat:build', 'babel:concat']);
+
+  grunt.registerTask('dist', 'lint, test, build, minify', ['clean', 'run:lint', 'mochaTest:failfast', 'build', 'uglify:dist']);
+  grunt.registerTask('distq', 'create dist (inc fdp.js) without testing', ['build', 'uglify:test', 'concat-dist-to-fdpjs']);
+  grunt.registerTask('distbug', 'create dist for fdp debugging, keeps asserts', ['build', 'run:jsbeautify', 'concat-bug-to-fdpjs']);
+  grunt.registerTask('distheat', 'create dist for heatmap inspection, no asserts', ['build', 'run:jsbeautify', 'concat-bug-to-fdpjs']);
+
   grunt.registerTask('coverage', ['clean', 'run:coverage']);
-  grunt.registerTask('test', 'lint then test', ['clean', 'run:lintdev', 'mochaTest:all']);
+  grunt.registerTask('test', 'lint then test', ['clean', 'run:lintdev', 'mochaTest:failfast']);
   grunt.registerTask('testq', 'test without linting', ['clean', 'mochaTest:nobail']);
-  grunt.registerTask('testtb', 'test without linting, fail fast', ['clean', 'mochaTest:all']);
+  grunt.registerTask('testtb', 'testq but bail on first error', ['clean', 'mochaTest:failfast']);
 
   grunt.registerTask('default', ['test']);
 };

@@ -37,8 +37,8 @@ let solution = FDP.solve(`
 console.log(solution); // -> {A: 15}
 ```
 
-For the DSL syntax see [the cfg](./docs/dsl.docs.txt).
-For other details see the extensive [test suite](./tests).
+For the DSL syntax see the docs in [fdq](https://github.com/qfox/fdq).
+For other details see the extensive test suite in [fdh](https://github.com/qfox/fdh).
 
 ## Tasks
 
@@ -46,7 +46,7 @@ There are a few grunt tasks and bash scripts hooked up to npm. This repo also us
 
 As a general rule, `./build` is used for any temporary output, including code coverage reports and temporary build files when producing a dist.
 
-Then `./dist` only contains final builds (`./dist/fdp.dist.min.js` and for some tasks `./dist/browser.js`).
+Then `./dist` only contains final builds (`./dist/fdp.dist.min.js` and for some tasks `./dist/fdp.js`).
 
 Note that both `./build` and `./dist` are cleared at the start of almost every (grunt) task.
 
@@ -57,9 +57,9 @@ Note that both `./build` and `./dist` are cleared at the start of almost every (
 - `grunt clean`: removes `./dist` and `./build`
 - `grunt build`: a direct alias for `dist`
 - `grunt dist`: lint, test, build, and minify to produce a real dist build
-- `grunt distq`: create a dist but skip linting, testing, and code coverage. Also produces a copy in `./dist/browser.js`
-- `grunt distheat`: creates a dist but instead of minification as the last step it beautifies. Used for [HeatFiler](https://qfox.github.io/heatfiler/src/index.html), a count based heatmap profiler. Copies to `browser.js`.
+- `grunt distq`: create a dist but skip linting, testing, and code coverage. Also produces a copy in `./dist/fdp.js`
 - `grunt distbug`: creates a build without removing test artifacts or minification. In case you need proper stack traces in other projects.
+- `grunt distheat`: creates a dist but instead of minification as the last step it beautifies. Used for [HeatFiler](https://qfox.github.io/heatfiler/src/index.html), a count based heatmap profiler. Copies to `fdp.js`.
 - `grunt coverage`: runs all tests in the code coverage tool
 - `grunt test`: runs linting and all tests
 - `grunt testq`: runs tests without linting

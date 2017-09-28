@@ -3,7 +3,7 @@
   "main": "./dist/fdp.dist.min.js",
   "description": "Finite Domain Problem reduction system",
   "license": "MIT",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "repository": {
     "type": "git",
     "url": "git://github.com/qfox/fdp.git"
@@ -11,7 +11,7 @@
   "scripts": {
     "install": "bin/create-git-hooks.sh",
     "test": "bin/lint.prod.sh && bin/mocha.sh",
-    "prepublish": "grunt dist",
+    "prepublishOnly": "grunt dist",
     "lint": "bin/lint.prod.sh",
     "lintdev": "bin/lint.dev.sh",
     "lintfix": "bin/lint.fix.sh",
