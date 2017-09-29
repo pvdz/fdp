@@ -159,29 +159,29 @@ function min_optimizeConstraints(ml, problem, domains, names, firstRun, once) {
     solveStack,
   } = problem;
 
-  function addPseudoAlias(indexA, indexB, A, B) {
-    ASSERT(domain_isBoolyPair(A) && domain_isBoolyPair(B), 'assuming A and B are booly pairs');
-    ASSERT(A !== B, 'booly pairs that are equal are regular aliases so dont call this function on them');
-
-    addAlias(indexA, indexB); // A is replaced by B
-
-    // consider them aliases but add a special solve stack
-    // entry to restore the max to A if B turns out nonzero
-    solveStack.push((_, force, getDomain, setDomain) => {
-      TRACE(' - deduper psuedo alias; was:', domain__debug(A), '!^', domain__debug(B), ', now:', domain__debug(getDomain(indexA)), '!^', domain__debug(getDomain(indexB)));
-      let vB = force(indexB);
-      TRACE(' - B forced to', vB);
-      if (vB > 0) {
-        setDomain(indexA, domain_removeValue(A, 0), true, true);
-      }
-
-      ASSERT(getDomain(indexA));
-      ASSERT(getDomain(indexB));
-      ASSERT(domain_isSolved(getDomain(indexA)));
-      ASSERT(domain_isSolved(getDomain(indexB)));
-      ASSERT((domain_getValue(getDomain(indexA)) === 0) === (domain_getValue(getDomain(indexB)) === 0));
-    });
-  }
+  //function addPseudoAlias(indexA, indexB, A, B) {
+  //  ASSERT(domain_isBoolyPair(A) && domain_isBoolyPair(B), 'assuming A and B are booly pairs');
+  //  ASSERT(A !== B, 'booly pairs that are equal are regular aliases so dont call this function on them');
+  //
+  //  addAlias(indexA, indexB); // A is replaced by B
+  //
+  //  // consider them aliases but add a special solve stack
+  //  // entry to restore the max to A if B turns out nonzero
+  //  solveStack.push((_, force, getDomain, setDomain) => {
+  //    TRACE(' - deduper psuedo alias; was:', domain__debug(A), '!^', domain__debug(B), ', now:', domain__debug(getDomain(indexA)), '!^', domain__debug(getDomain(indexB)));
+  //    let vB = force(indexB);
+  //    TRACE(' - B forced to', vB);
+  //    if (vB > 0) {
+  //      setDomain(indexA, domain_removeValue(A, 0), true, true);
+  //    }
+  //
+  //    ASSERT(getDomain(indexA));
+  //    ASSERT(getDomain(indexB));
+  //    ASSERT(domain_isSolved(getDomain(indexA)));
+  //    ASSERT(domain_isSolved(getDomain(indexB)));
+  //    ASSERT((domain_getValue(getDomain(indexA)) === 0) === (domain_getValue(getDomain(indexB)) === 0));
+  //  });
+  //}
 
   while (!onlyJumps && (varChanged || restartedRelevantOp)) {
     ++loops;
@@ -2679,22 +2679,14 @@ function min_optimizeConstraints(ml, problem, domains, names, firstRun, once) {
       return;
     }
 
-    // A and B have a zero and a non-zero. if their size
-    // is 2 then they are regular aliases or pseudo aliases
-    if (domain_size(A) === 2) {
-      if (A === B) {
-        TRACE(' - A==B, size(A)=2 so size(B)=2 so max(A)==max(B) so under XNOR: A==B;', domain__debug(A), '!^', domain__debug(B));
-        ASSERT(domain_size(B) === 2, 'If A==B and size(A)=2 then size(B) must also be 2 and they are regular aliases');
-        addAlias(indexA, indexB);
-        varChanged = true;
-        return;
-      } else if (domain_size(B) === 2) {
-        TRACE(' - A!=B, A and B both booly-pair. under xnor they are pseudo aliases (either both zero or both nonzero);', domain__debug(A), '!^', domain__debug(B));
-        addPseudoAlias(indexA, indexB, A, B);
-        varChanged = true;
-        return;
-      }
-    // note: cutter supports a case where only one side is a BOOLY (because that one could be pseudo-aliased away safely)
+    // A and B are booly-pairs and equal then they can be considered an alias
+    if (A === B && domain_size(A) === 2) {
+      TRACE(' - A==B, size(A)=2 so size(B)=2 so max(A)==max(B) so under XNOR: A==B;', domain__debug(A), '!^', domain__debug(B));
+      ASSERT(domain_size(B) === 2, 'If A==B and size(A)=2 then size(B) must also be 2 and they are regular aliases');
+      addAlias(indexA, indexB);
+      varChanged = true;
+      return;
+      // note: cutter supports more cases for xnor pseudo alias, but that requires knowing BOOLY state for each var
     }
 
     TRACE(' - not only jumps...');
