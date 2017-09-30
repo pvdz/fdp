@@ -10,6 +10,7 @@
   },
   "scripts": {
     "install": "bin/create-git-hooks.sh",
+    "jest": "bin/jest.sh",
     "test": "bin/lint.prod.sh && bin/mocha.sh",
     "prepublishOnly": "grunt dist",
     "lint": "bin/lint.prod.sh",
@@ -46,6 +47,7 @@
     "grunt-run": "^0.8.0",
     "isparta": "^4.0.0",
     "istanbul": "^1.0.0-alpha.2",
+    "jest": "^21.2.1",
     "js-beautify": "^1.7.3",
     "mocha": "^3.5.3"
   },
