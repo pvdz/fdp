@@ -236,7 +236,7 @@ function dsl2ml(dslStr, problem, _debug) {
 
   function grow(forcedExtraSpace) {
     TRACE(' - grow(' + (forcedExtraSpace || '') + ') from', mlBufSize);
-    // grow the buffer by 10% or set it to `force`
+    // grow the buffer by 10% or `forcedExtraSpace`
     // you can't really grow existing buffers, instead you create a bigger buffer and copy the old one into it...
     let oldSize = mlBufSize;
     if (forcedExtraSpace) mlBufSize += forcedExtraSpace;
@@ -1439,7 +1439,14 @@ function dsl2ml(dslStr, problem, _debug) {
         break;
       default:
         // because we manually update mlPointer the buffer may not grow accordingly. so do that immediately
-        grow(mlPointer + size + 1); // 1 for opcode
+        // but only if necessary
+        const jumpDestination = mlPointer + size;
+        if (mlBufSize <= jumpDestination) {
+          const sizeDifference = jumpDestination - mlBufSize;
+          const growAmount = (jumpDestination / 10) | 0 + sizeDifference;
+          grow(growAmount);
+        }
+
         if (size < 0xffff) {
           encode8bit(ML_JMP);
           encode16bit(size - SIZEOF_V);
@@ -1582,7 +1589,7 @@ function ArrayBufferTransferPoly(source, length) {
     throw new TypeError('Source must be an instance of ArrayBuffer');
   if (length <= source.byteLength)
     return source.slice(0, length);
-  var sourceView = new Uint8Array(source),
+  const sourceView = new Uint8Array(source),
     destView = new Uint8Array(new ArrayBuffer(length));
   destView.set(sourceView);
   return destView.buffer;
