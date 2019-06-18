@@ -211,6 +211,8 @@ function _preSolver(dsl, solver, options, solveOptions) {
 
   if (fdSolution && typeof fdSolution !== 'string') {
     term.error('<solved after fdq>');
+    if (Array.isArray(fdSolution))
+      return fdSolution.map(sol => createSolution(problem, sol, options, solveOptions.max || Infinity));
     return createSolution(problem, fdSolution, options, solveOptions.max || Infinity);
   }
 
